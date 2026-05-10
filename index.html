@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="theme-color" content="#f4e4c4">
-<title>Malle Moneten Tracker</title>
+<title>Malle Monetentracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -81,23 +81,15 @@
   .header h1 {
     font-family: 'Fraunces', serif;
     font-weight: 900;
-    font-size: clamp(28px, 7vw, 38px);
+    font-size: clamp(22px, 6.2vw, 34px);
     line-height: 1;
     letter-spacing: -0.02em;
     color: var(--sea);
     font-variation-settings: "opsz" 144;
+    white-space: nowrap;
   }
 
   .header h1 em { font-style: italic; font-weight: 500; color: var(--terracotta); }
-
-  .header .tagline {
-    font-size: 12px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--terracotta);
-    margin-top: 6px;
-    font-weight: 600;
-  }
 
   .tabs {
     display: grid;
@@ -391,6 +383,83 @@
 
   .single-day-input { margin-top: 10px; }
 
+  .day-nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .day-nav-btn {
+    flex-shrink: 0;
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    border: 1.5px solid rgba(31, 58, 95, 0.15);
+    background: var(--sand-light);
+    color: var(--sea);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .day-nav-btn:active { background: var(--sea); color: var(--cream); transform: scale(0.96); }
+
+  .day-range-label {
+    flex: 1;
+    text-align: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--sea);
+    letter-spacing: -0.01em;
+  }
+
+  .day-overview { display: flex; flex-direction: column; gap: 9px; }
+
+  .day-row {
+    display: grid;
+    grid-template-columns: 96px 1fr auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .day-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--sea-light);
+  }
+
+  .day-row.is-today .day-label { color: var(--terracotta); font-weight: 700; }
+
+  .day-bar-track {
+    height: 10px;
+    background: var(--sand-light);
+    border: 1px solid rgba(31, 58, 95, 0.08);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .day-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--sun), var(--sunset));
+    transition: width 0.3s ease;
+  }
+
+  .day-row.is-today .day-bar-fill { background: linear-gradient(90deg, var(--sunset), var(--terracotta)); }
+
+  .day-amount {
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--sea);
+    white-space: nowrap;
+  }
+
+  .day-amount.zero { color: var(--sea-light); opacity: 0.45; }
+
   .chart-wrap { position: relative; height: 240px; margin: 8px 0 4px; }
 
   .exp-list { display: flex; flex-direction: column; gap: 8px; }
@@ -569,8 +638,7 @@
 <div class="app">
   <header class="header">
     <div class="sun"></div>
-    <h1>Malle <em>Moneten</em></h1>
-    <div class="tagline">Tracker · Mallorca Edition</div>
+    <h1>Malle <em>Monetentracker</em></h1>
   </header>
 
   <nav class="tabs">
@@ -629,6 +697,16 @@
       <div class="stat count"><div class="stat-label">Buchungen</div><div class="stat-value" id="stat-count">0</div></div>
       <div class="stat avg"><div class="stat-label">Ø pro Tag</div><div class="stat-value" id="stat-avg">€0,00</div></div>
       <div class="stat top"><div class="stat-label">Top-Kategorie</div><div class="stat-value" id="stat-top">—</div></div>
+    </div>
+
+    <div class="card">
+      <h2 class="card-title">Tagesübersicht</h2>
+      <div class="day-nav">
+        <button class="day-nav-btn" id="day-prev" aria-label="Ein Tag zurück">◀</button>
+        <div class="day-range-label" id="day-range">–</div>
+        <button class="day-nav-btn" id="day-next" aria-label="Ein Tag vor">▶</button>
+      </div>
+      <div id="day-overview" class="day-overview"></div>
     </div>
 
     <div class="card">
@@ -697,11 +775,11 @@
 const STORAGE_KEY = 'malle-moneten-tracker-v1';
 const DEFAULT_CATEGORIES = [
   { id: 'food',    emoji: '🍽️', name: 'Essen & Trinken' },
-  { id: 'drinks',  emoji: '🍹', name: 'Drinks & Bar' },
+  { id: 'drinks',  emoji: '🍺', name: 'Drinks & Bar' },
   { id: 'stay',    emoji: '🏨', name: 'Unterkunft' },
   { id: 'transit', emoji: '🚗', name: 'Transport' },
   { id: 'fun',     emoji: '🏖️', name: 'Aktivitäten' },
-  { id: 'shop',    emoji: '🛍️', name: 'Shopping' },
+  { id: 'shop',    emoji: '🛍️', name: 'Helmut' },
   { id: 'misc',    emoji: '📌', name: 'Sonstiges' },
 ];
 
@@ -714,6 +792,12 @@ function load() {
       const data = JSON.parse(raw);
       state.categories = Array.isArray(data.categories) && data.categories.length ? data.categories : [...DEFAULT_CATEGORIES];
       state.expenses = Array.isArray(data.expenses) ? data.expenses : [];
+      let migrated = false;
+      state.categories.forEach(c => {
+        if (c.id === 'drinks' && c.emoji === '🍹') { c.emoji = '🍺'; migrated = true; }
+        if (c.id === 'shop' && c.name === 'Shopping') { c.name = 'Helmut'; migrated = true; }
+      });
+      if (migrated) save();
     }
   } catch (e) { console.error('Load failed', e); }
 }
@@ -732,6 +816,13 @@ function fmtEur(n) {
 
 function todayISO() {
   const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+function addDaysISO(iso, n) {
+  const d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 10);
 }
@@ -794,6 +885,7 @@ document.getElementById('add-btn').addEventListener('click', () => {
 
 let currentFilter = 'all';
 let chartInstance = null;
+let dayOffset = 0;
 
 document.querySelectorAll('.filter-pill').forEach(p => {
   p.addEventListener('click', () => {
@@ -861,6 +953,7 @@ function renderDashboard() {
   document.getElementById('stat-top').textContent = topCat;
 
   renderChart(byCat);
+  renderDayOverview();
 
   const wrap = document.getElementById('exp-list');
   wrap.innerHTML = '';
@@ -900,6 +993,39 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function renderDayOverview() {
+  const today = todayISO();
+  const center = addDaysISO(today, dayOffset);
+  const days = [];
+  for (let i = -3; i <= 3; i++) days.push(addDaysISO(center, i));
+
+  const sums = {};
+  state.expenses.forEach(e => { if (days.indexOf(e.date) !== -1) sums[e.date] = (sums[e.date] || 0) + Number(e.amount); });
+  const max = Math.max(0, ...days.map(d => sums[d] || 0));
+
+  const fmtShort = iso => new Date(iso + 'T00:00:00').toLocaleDateString('de-DE', { day: '2-digit', month: 'short' });
+  document.getElementById('day-range').textContent = fmtShort(days[0]) + ' – ' + fmtShort(days[6]);
+
+  const wrap = document.getElementById('day-overview');
+  wrap.innerHTML = '';
+  days.forEach(d => {
+    const amt = sums[d] || 0;
+    const w = amt > 0 ? Math.max(max > 0 ? (amt / max * 100) : 0, 6) : 0;
+    const label = new Date(d + 'T00:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    const row = document.createElement('div');
+    row.className = 'day-row' + (d === today ? ' is-today' : '');
+    row.innerHTML = `
+      <div class="day-label">${label}</div>
+      <div class="day-bar-track"><div class="day-bar-fill" style="width:${w}%"></div></div>
+      <div class="day-amount${amt === 0 ? ' zero' : ''}">${fmtEur(amt)}</div>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+document.getElementById('day-prev').addEventListener('click', () => { dayOffset -= 1; renderDayOverview(); });
+document.getElementById('day-next').addEventListener('click', () => { dayOffset += 1; renderDayOverview(); });
+
 function renderChart(byCat) {
   const ctx = document.getElementById('chart');
   const labels = [], data = [];
@@ -922,7 +1048,7 @@ function renderChart(byCat) {
       maintainAspectRatio: false,
       cutout: '60%',
       plugins: {
-        legend: { position: 'bottom', labels: { font: { family: 'Plus Jakarta Sans', size: 12 }, color: '#1f3a5f', padding: 10, boxWidth: 12, boxHeight: 12 } },
+        legend: { position: 'right', align: 'center', labels: { font: { family: 'Plus Jakarta Sans', size: 11 }, color: '#1f3a5f', padding: 8, boxWidth: 11, boxHeight: 11 } },
         tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + fmtEur(ctx.parsed) } }
       }
     }
